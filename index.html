@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Firebase Phone OTP Auth</title>
+    <style>
+      :root {
+        --bg: #0b1020;
+        --panel: #111936;
+        --panel-2: #0e1530;
+        --text: #e6e9ef;
+        --muted: #a6accd;
+        --primary: #6ea8fe;
+        --danger: #ff6b6b;
+        --success: #51cf66;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, Apple Color Emoji, Segoe UI Emoji;
+        background: radial-gradient(1200px 600px at 10% -10%, #1b2347 0%, var(--bg) 40%),
+                    radial-gradient(1000px 500px at 120% 10%, #1b2347 0%, transparent 40%),
+                    var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+      }
+      .card {
+        width: 100%;
+        max-width: 540px;
+        background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
+        border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 16px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.05);
+        overflow: hidden;
+      }
+      .card-header {
+        padding: 20px 24px;
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .dot {
+        width: 10px; height: 10px; border-radius: 50%; background: var(--primary);
+        box-shadow: 0 0 20px rgba(110,168,254,0.8), 0 0 40px rgba(110,168,254,0.4);
+      }
+      .title { font-weight: 700; letter-spacing: 0.2px; }
+      .subtitle { color: var(--muted); font-size: 14px; }
+      .card-body { padding: 24px; display: grid; gap: 18px; }
+
+      label { font-size: 14px; color: var(--muted); display: block; margin-bottom: 8px; }
+      input[type="text"], input[type="tel"] {
+        width: 100%;
+        padding: 14px 14px;
+        background: rgba(255,255,255,0.04);
+        color: var(--text);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 12px;
+        outline: none;
+        transition: border 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+      }
+      input[type="text"]:focus, input[type="tel"]:focus {
+        border-color: rgba(110,168,254,0.7);
+        background: rgba(255,255,255,0.06);
+        box-shadow: 0 0 0 4px rgba(110,168,254,0.15);
+      }
+      button {
+        padding: 12px 16px;
+        background: linear-gradient(180deg, #6ea8fe, #4d7dff);
+        color: #0b1020;
+        font-weight: 700;
+        border: none;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: transform 0.06s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+        box-shadow: 0 8px 20px rgba(77,125,255,0.35);
+      }
+      button:hover { transform: translateY(-1px); }
+      button:active { transform: translateY(0); }
+      button[disabled] { opacity: 0.6; cursor: not-allowed; }
+      .btn-secondary {
+        background: linear-gradient(180deg, #aab4cf, #8994b1);
+        color: #0b1020;
+        box-shadow: 0 8px 20px rgba(170,180,207,0.2);
+      }
+
+      .row { display: grid; gap: 12px; }
+      .row-2 { display: grid; grid-template-columns: 1fr auto; gap: 12px; }
+
+      .help { font-size: 13px; color: var(--muted); }
+      .error { color: var(--danger); font-size: 14px; }
+      .success { color: var(--success); font-size: 14px; }
+
+      .otp-container { display: none; }
+      .signed-in { display: none; }
+
+      .footer { padding: 14px 24px 22px; border-top: 1px solid rgba(255,255,255,0.06); color: var(--muted); font-size: 13px; }
+
+      .recaptcha { margin-top: 6px; }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="card-header">
+        <div class="dot"></div>
+        <div>
+          <div class="title">Phone OTP Authentication</div>
+          <div class="subtitle">Firebase Web (v9) • Invisible reCAPTCHA</div>
+        </div>
+      </div>
+
+      <div class="card-body">
+        <div id="message" class="help"></div>
+
+        <div class="auth-forms">
+          <div class="row">
+            <label for="phone-input">Phone number (E.164 format)</label>
+            <input id="phone-input" type="tel" placeholder="e.g. +15551234567" autocomplete="tel" />
+            <div class="help">Must include country code, e.g. +1 in US, +91 in India</div>
+            <div id="recaptcha-container" class="recaptcha"></div>
+          </div>
+
+          <div class="row-2">
+            <button id="send-otp-btn">Send OTP</button>
+            <button id="reset-btn" class="btn-secondary" title="Clear inputs">Reset</button>
+          </div>
+
+          <div class="row otp-container" id="otp-section">
+            <label for="otp-input">Enter OTP</label>
+            <input id="otp-input" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="6-digit code" />
+            <div class="row-2">
+              <button id="verify-otp-btn">Verify OTP</button>
+              <button id="resend-btn" class="btn-secondary">Resend</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="signed-in" id="signed-in">
+          <div class="success" id="user-info">Signed in</div>
+          <div class="row-2" style="margin-top: 8px;">
+            <button id="signout-btn" class="btn-secondary">Sign out</button>
+            <button id="continue-btn">Continue</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer">
+        Tip: Enable Phone Sign-in in your Firebase Console and add your local domain (localhost) under Authorized domains.
+      </div>
+    </div>
+
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+      import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+      // 1) Replace the placeholders below with your Firebase project's config
+      //    Firebase Console → Project settings → General → Your apps → SDK setup and configuration
+      const firebaseConfig = {
+        apiKey: "AIzaSyDIHawXZZfiYMhBUznsnbXS0LOId9u5FLA",
+  authDomain: "bagichaa-app.firebaseapp.com",
+  projectId: "bagichaa-app",
+  storageBucket: "bagichaa-app.firebasestorage.app",
+  messagingSenderId: "868520218471",
+  appId: "1:868520218471:web:d333c48ee8d01e2b1b69c2",
+  measurementId: "G-9VVTHEXS5M"
+      };
+
+      // Initialize Firebase
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+      auth.useDeviceLanguage();
+
+      const phoneInput = document.getElementById('phone-input');
+      const sendOtpBtn = document.getElementById('send-otp-btn');
+      const resetBtn = document.getElementById('reset-btn');
+      const resendBtn = document.getElementById('resend-btn');
+      const otpSection = document.getElementById('otp-section');
+      const otpInput = document.getElementById('otp-input');
+      const verifyOtpBtn = document.getElementById('verify-otp-btn');
+      const message = document.getElementById('message');
+      const signedIn = document.getElementById('signed-in');
+      const userInfo = document.getElementById('user-info');
+      const signoutBtn = document.getElementById('signout-btn');
+      const continueBtn = document.getElementById('continue-btn');
+
+      let confirmationResult = null;
+      let recaptchaVerifier = null;
+
+      function setMessage(text, type = 'info') {
+        message.textContent = text || '';
+        message.className = type === 'error' ? 'error' : type === 'success' ? 'success' : 'help';
+      }
+
+      function ensureRecaptcha() {
+        if (recaptchaVerifier) return recaptchaVerifier;
+        recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+          size: 'invisible',
+          callback: function() {
+            // reCAPTCHA solved automatically for invisible; will proceed with sign-in
+          },
+          'expired-callback': function() {
+            setMessage('reCAPTCHA expired. Please try again.', 'error');
+            try { recaptchaVerifier.clear(); } catch (_) {}
+            recaptchaVerifier = null;
+          }
+        });
+        return recaptchaVerifier;
+      }
+
+      function validatePhone(raw) {
+        const value = raw.trim();
+        if (!value.startsWith('+')) return { ok: false, normalized: null, reason: 'Include country code prefix, e.g. +1 or +91' };
+        // Basic sanity check for digits length (min 8, max 15 after +)
+        const digits = value.replace(/\D/g, '');
+        if (digits.length < 8 || digits.length > 15) return { ok: false, normalized: null, reason: 'Enter a valid phone number in E.164 format' };
+        return { ok: true, normalized: value };
+      }
+
+      async function sendOtp() {
+        setMessage('');
+        const { ok, normalized, reason } = validatePhone(phoneInput.value);
+        if (!ok) { setMessage(reason, 'error'); return; }
+
+        sendOtpBtn.disabled = true;
+        setMessage('Sending OTP...');
+        try {
+          const verifier = ensureRecaptcha();
+          confirmationResult = await signInWithPhoneNumber(auth, normalized, verifier);
+          otpSection.style.display = 'grid';
+          setMessage('OTP sent. Check your phone and enter the code.', 'success');
+          otpInput.focus();
+        } catch (err) {
+          console.error(err);
+          setMessage(err?.message || 'Failed to send OTP', 'error');
+          try { if (recaptchaVerifier) recaptchaVerifier.clear(); } catch (_) {}
+          recaptchaVerifier = null;
+        } finally {
+          sendOtpBtn.disabled = false;
+        }
+      }
+
+      async function verifyOtp() {
+        setMessage('');
+        const code = otpInput.value.trim();
+        if (!code) { setMessage('Enter the 6-digit OTP code', 'error'); return; }
+        if (!confirmationResult) { setMessage('No OTP session. Please request a new code.', 'error'); return; }
+
+        verifyOtpBtn.disabled = true;
+        setMessage('Verifying OTP...');
+        try {
+          const result = await confirmationResult.confirm(code);
+          const user = result.user;
+          setMessage('Phone number verified!', 'success');
+          showSignedIn(user);
+        } catch (err) {
+          console.error(err);
+          setMessage(err?.message || 'Invalid code. Please try again.', 'error');
+        } finally {
+          verifyOtpBtn.disabled = false;
+        }
+      }
+
+      function showSignedIn(user) {
+        document.querySelector('.auth-forms').style.display = 'none';
+        signedIn.style.display = 'block';
+        userInfo.textContent = `Signed in as ${user?.phoneNumber || 'unknown number'}`;
+      }
+
+      function showSignedOut() {
+        document.querySelector('.auth-forms').style.display = 'block';
+        signedIn.style.display = 'none';
+      }
+
+      function resetAll() {
+        phoneInput.value = '';
+        otpInput.value = '';
+        otpSection.style.display = 'none';
+        confirmationResult = null;
+        setMessage('');
+        try { if (recaptchaVerifier) recaptchaVerifier.clear(); } catch (_) {}
+        recaptchaVerifier = null;
+      }
+
+      async function handleResend() {
+        if (!phoneInput.value.trim()) {
+          setMessage('Enter your phone number first', 'error');
+          phoneInput.focus();
+          return;
+        }
+        await sendOtp();
+      }
+
+      sendOtpBtn.addEventListener('click', sendOtp);
+      verifyOtpBtn.addEventListener('click', verifyOtp);
+      resetBtn.addEventListener('click', resetAll);
+      resendBtn.addEventListener('click', handleResend);
+      signoutBtn.addEventListener('click', async () => {
+        await signOut(auth).catch(() => {});
+        showSignedOut();
+        resetAll();
+        setMessage('Signed out');
+      });
+      continueBtn.addEventListener('click', () => {
+        setMessage('You are authenticated. Continue with your app flow.', 'success');
+      });
+
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+          showSignedIn(user);
+        } else {
+          showSignedOut();
+        }
+      });
+    </script>
+  </body>
+</html> 
