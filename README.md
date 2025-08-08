@@ -12,18 +12,12 @@ A minimal, single-page web UI for Firebase Phone Number authentication with OTP 
 1. Create or open a Firebase project in the Firebase Console.
 2. Go to Authentication → Sign-in method → Enable "Phone".
 3. Go to Project Settings → General → Your apps → Web app → Copy the SDK configuration.
-4. In `index.html`, replace the placeholders in `firebaseConfig` with your project's values:
+4. Configure your environment file (recommended):
+   - Copy `env.example.js` to `env.local.js`
+   - Fill in your Firebase SDK config inside `env.local.js`
+   - `env.local.js` is git-ignored and loaded automatically by `index.html`
 
-```js
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID",
-};
-```
+   Alternatively, you can paste the config directly into `index.html` as a fallback, but avoid committing credentials.
 
 5. In Authentication → Settings → Authorized domains, add your local dev domain (e.g., `localhost`), and any domain you will host on.
 6. Optionally, add test phone numbers under Authentication → Sign-in method → Phone (helpful during development).
@@ -46,6 +40,7 @@ Alternatively, use any static server or IDE Live Server.
 - reCAPTCHA is configured as "invisible" and will auto-trigger when you send the OTP.
 - If reCAPTCHA expires, the UI will prompt you to try again.
 - Ensure your domain is listed under Authorized domains in Firebase Authentication settings.
+- If you see `auth/requests-from-referer-...-are-blocked`, allow your local origin (e.g., `http://localhost:5173/*`) in Google Cloud Console → APIs & Services → Credentials → your API key → HTTP referrers.
 - Some browsers or extensions can block third-party scripts or cookies; try an incognito window or a different browser.
 
 ## 4) Deploy

@@ -153,20 +153,21 @@
       </div>
     </div>
 
+    <script src="env.local.js"></script>
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
       import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
       // 1) Replace the placeholders below with your Firebase project's config
       //    Firebase Console → Project settings → General → Your apps → SDK setup and configuration
-      const firebaseConfig = {
-        apiKey: "AIzaSyDIHawXZZfiYMhBUznsnbXS0LOId9u5FLA",
-  authDomain: "bagichaa-app.firebaseapp.com",
-  projectId: "bagichaa-app",
-  storageBucket: "bagichaa-app.firebasestorage.app",
-  messagingSenderId: "868520218471",
-  appId: "1:868520218471:web:d333c48ee8d01e2b1b69c2",
-  measurementId: "G-9VVTHEXS5M"
+      const firebaseConfig = window.__FIREBASE_CONFIG__ ?? {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_PROJECT_ID.firebasestorage.app",
+        messagingSenderId: "YOUR_SENDER_ID",
+        appId: "YOUR_APP_ID",
+        measurementId: "G-XXXXXXXXXX"
       };
 
       // Initialize Firebase
